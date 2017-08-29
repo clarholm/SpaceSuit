@@ -23,7 +23,7 @@ By Jens Clarholm @jenslabs, jenslabs.com
 
 //Define and initiate global variables
 int currentState = 0;
-int nrOfStates = 1;
+int nrOfStates = 9;
 boolean helmetLightsActive = true;
 boolean debug1 = true;
 
@@ -45,6 +45,7 @@ uint16_t frame = 0;      //I think I might be able to move this variable to the 
 uint16_t animateSpeed = 100;            //Number of frames to increment per loop
 uint8_t  animation = 10;    //Active animation
 uint8_t brightness = 50;    //Global brightness percentage
+uint8_t  gHueDelta = 18;
 
 void setup() {
   Serial.begin(9600);
@@ -86,32 +87,59 @@ void loop() {
   }
  }
   readPots();
+  animateSpeed = currentSpeedPotValue;
+  brightness = currentBrightnessPotValue;
   //FastLED.setBrightness(currentBrightnessPotValue);
 
 switch(currentState)
 {
 case 0:
-    setAllLedsToColor(CRGB::HotPink);
-    //RingPair(leds, frame);
-    Serial.println("Case 0 entered.");
+    RingPair(leds, frame); 
     break;
-    
-case 1:
-    setAllLedsToColor(CRGB::DarkTurquoise);
-    Serial.println("Case 0 entered.");
+  case 1:
+    DoubleChaser(leds,frame);
+    break;
+  case 2:
+    TripleBounce(leds,frame);
+    break;
+  case 3:
+    WaveInt(leds,frame,gHue);
+    break;
+  case 4:  
+    Wave(leds,frame,gHue);
+    break;
+  case 5:  //Blue spark (Slow)
+    Spark(leds,frame,255-currentSpeedPotValue,gHue);   //Overloaded version of "Spark" with Hue value, 255 for fade is the slowest fade possible. 256 is on/off
+    delay(2);       //Slow things down a bit more for Slow Spark
+    break;
+  case 6: //Blue spark (fast)
+    Spark(leds,frame,246,gHue);   //Overloaded version of "Spark" with Hue value, 246 fade is faster which makes for a sharper dropoff
+    break;
+  case 7:  //White spark (Slow)
+    Spark(leds,frame,255);     //"Spark" function without hue make a white spark, 255 for fade is the slowest fade possible.
+    delay(2);       //Slow things down a bit more for Slow Spark
+    break;
+  case 8: //White spark (fast)      //"Spark" function without hue make a white spark, 246 fade is faster which makes for a sharper dropoff
+    Spark(leds,frame,245);
+    break;
+  case 9:
+    RainbowSpark(leds,frame,240);    //240 for dropoff is a pretty sharp fade, good for this animation
     break;
     
 default:
     delay(100); 
-    
+}   
+ FastLED.setBrightness(brightness);
  FastLED.show();         //All animations are applied!..send the results to the leds(s)
- frame += animateSpeed;   
-  
-  
-  }
+ frame += animateSpeed;  
 }
 
-
+void generateNewHew(){
+  gHue += gHueDelta; // compute new hue
+  gHue = gHue % 360; // bring hue back in range
+  Serial.print("New gHue: ");
+  Serial.println(gHue);
+  }
 
 void bpm()
 {
@@ -179,7 +207,10 @@ int oldCurrentSpeedPotValue = currentSpeedPotValue;
 int oldCurrentBrightnessPotValue = currentBrightnessPotValue;
 
 int tempSpeedPot = analogRead(speedPot);
-currentSpeedPotValue = map(tempSpeedPot, 0, 1023, 255, 0);
+int tempCurrentSpeedPotValue = map(tempSpeedPot, 0, 1023, 255, 1);
+if(tempCurrentSpeedPotValue > currentSpeedPotValue+1 || tempCurrentSpeedPotValue < currentSpeedPotValue-1){
+  currentSpeedPotValue = tempCurrentSpeedPotValue;
+  }
 if (currentSpeedPotValue != oldCurrentSpeedPotValue){
       Serial.print("New Speed Pot value: ");
       Serial.print(currentSpeedPotValue);
@@ -189,7 +220,11 @@ if (currentSpeedPotValue != oldCurrentSpeedPotValue){
 
       
 int tempBrightnessPot = analogRead(brightnessPot);
-currentBrightnessPotValue = map(tempBrightnessPot, 0, 1023, 255, 0);
+int tempCurrentBrightnessPotValue = map(tempBrightnessPot, 0, 1023, 255, 1);
+if(tempCurrentBrightnessPotValue > currentBrightnessPotValue+1 || tempCurrentBrightnessPotValue < currentBrightnessPotValue-1)
+{
+  currentBrightnessPotValue = tempCurrentBrightnessPotValue;
+  }
 if (currentBrightnessPotValue != oldCurrentBrightnessPotValue){
       Serial.print("New Brightness Pot value: ");
       Serial.print(currentBrightnessPotValue);
@@ -215,6 +250,7 @@ void updateState(int buttonPressed){
       currentState = newState;
     }
    else if (buttonPressed==1){  //toggleButton
+    generateNewHew();
     helmetLightsActive = !helmetLightsActive;
           Serial.print("Helmet light is Active: ");
       Serial.println(helmetLightsActive);     
@@ -225,57 +261,7 @@ void updateState(int buttonPressed){
   
   }
 
- void showCurrentState(){
-      
-      if (debug1 == true){
-      Serial.print("Eneterd show current state, current state is: ");
-      Serial.println(currentState);
-      }     
-      switch (currentState) {
-      case 0:
-        Serial.println("State 0 indication code here!");
-        displayCurrentStateByShowingColorsAndFlashing(CRGB::HotPink);
-        break;
-      case 1:
-        Serial.println("State 1 indication code here!");
-        displayCurrentStateByShowingColorsAndFlashing(CRGB::HotPink);
-        break;
-      case 2:
-        Serial.println("State 2 indication code here!");
-        displayCurrentStateByShowingColorsAndFlashing(CRGB::Gold);
-        break;
-      case 3:
-        Serial.println("State 2 indication code here!");
-        displayCurrentStateByShowingColorsAndFlashing(CRGB::Gold);
-        break;
-      case 4:
-        Serial.println("State 2 indication code here!");
-        displayCurrentStateByShowingColorsAndFlashing(CRGB::DarkTurquoise);
-        break;        
-     case 5:
-        Serial.println("State 2 indication code here!");
-        displayCurrentStateByShowingColorsAndFlashing(CRGB::DarkTurquoise);
-        break;
-     case 6:
-        Serial.println("State 2 indication code here!");
-        displayCurrentStateByShowingColorsAndFlashing(CRGB::Maroon);
-        break;        
-     case 7:
-        Serial.println("State 2 indication code here!");
-        displayCurrentStateByShowingColorsAndFlashing(CRGB::Maroon);
-        break;
-     case 8:
-        Serial.println("State 2 indication code here!");
-        displayCurrentStateByShowingColorsAndFlashing(CRGB::Coral);
-        break;        
-     case 9:
-        Serial.println("State 2 indication code here!");
-        displayCurrentStateByShowingColorsAndFlashing(CRGB::Coral);
-        break;
-      default:
-        Serial.println("No case available for current state.");
-      }
-  }
+ 
 
 void displayCurrentStateByShowingColorsAndFlashing(CRGB color){
   setAllLedsToColor(color);
